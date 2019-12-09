@@ -1,19 +1,17 @@
 #include <fstream>
 #include <vector>
 #include <map>
-#include <queue>
 
 void printUnloaded(std::ostream& out, int page, int frame);
 void printLoaded(std::ostream& out, int page, int frame);
 void printAlreadyLoaded(std::ostream& out, int page, int frame);
 void printPageFaults(std::ostream& out, int pageFaults);
+template <class Strategy>
 void simulate(std::ostream& out, size_t pageCount, size_t frameCount, std::vector<int> const& pageRequests);
 
-struct Page
-{
-  int pageNumber;
-  int nextRequest;
-};
+class FIFOStrategy;
+class OptimalStrategy;
+class LRUStrategy;
 
 int main()
 {
@@ -33,20 +31,23 @@ int main()
   
   // Do "FIFO" simulation
   out << "FIFO\n";
-  simulate(out, pageCount, frameCount, pageRequests);
+  simulate<FIFOStrategy>(out, pageCount, frameCount, pageRequests);
   
   // Do "Optimal" simulation
   out << "\nOptimal\n";
-  simulate(out, pageCount, frameCount, pageRequests);
+  simulate<OptimalStrategy>(out, pageCount, frameCount, pageRequests);
   
   // Do "LRU" simulation
-  simulate(out, pageCount, frameCount, pageRequests);
+  out << "\nLRU\n";
+  simulate<LRUStrategy>(out, pageCount, frameCount, pageRequests);
   
   return 0;
 }
 
+template <class Strategy>
 void simulate(std::ostream& out, size_t pageCount, size_t frameCount, std::vector<int> const& pageRequests)
 {
+  Strategy strategy;
   std::map<int, int> pageMapping;
   std::vector<int> frames(frameCount, -1);
   
@@ -55,12 +56,13 @@ void simulate(std::ostream& out, size_t pageCount, size_t frameCount, std::vecto
     pageMapping[i] = -1;
   }
   
-  size_t nextFrame = 0, pageFaults = 0;
+  size_t pageFaults = 0;
   
   for (size_t i = 0; i < pageRequests.size(); ++i)
   {
     int const page = pageRequests[i];
     int const mappedFrame = pageMapping[page];
+    int const nextFrame = strategy.requestFrameForPage(page, frames, pageMapping);
     
     if (mappedFrame == -1)
     {
@@ -74,7 +76,6 @@ void simulate(std::ostream& out, size_t pageCount, size_t frameCount, std::vecto
       frames[nextFrame] = page;
       pageMapping[page] = nextFrame;
       printLoaded(out, page, nextFrame);
-      nextFrame = (nextFrame + 1) % frames.size();
       pageFaults += 1;
     }
     else
@@ -85,6 +86,39 @@ void simulate(std::ostream& out, size_t pageCount, size_t frameCount, std::vecto
   }
   printPageFaults(out, pageFaults);
 }
+
+class FIFOStrategy
+{
+  size_t m_nextFrame;
+public:
+  FIFOStrategy() : m_nextFrame(0) {}
+  
+  size_t requestFrameForPage(size_t const page, std::vector<int> const& frames, std::map<int, int> const & pageMapping)
+  {
+    size_t frame = m_nextFrame;
+    if (pageMapping.at(page) == -1)
+    {
+      m_nextFrame = (m_nextFrame + 1) % frames.size();
+    }
+    return frame;
+  }
+};
+
+class OptimalStrategy {
+public:
+  size_t requestFrameForPage(size_t const page, std::vector<int> const& frames, std::map<int, int> const & pageMapping)
+  {
+    return 0;
+  }
+};
+
+class LRUStrategy {
+public:
+  size_t requestFrameForPage(size_t const page, std::vector<int> const& frames, std::map<int, int> const & pageMapping)
+  {
+    return 0;
+  }
+};
 
 void printUnloaded(std::ostream& out, int page, int frame)
 {
