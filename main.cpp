@@ -20,21 +20,27 @@ int main()
   std::ifstream in("input.txt");
   std::ofstream out("output.txt");
   
+  // Read metadata - how many pages, frames, and requests to simulate
   size_t pageCount, frameCount, requestCount;
   in >> pageCount >> frameCount >> requestCount;
   
+  // Read all page requests into a vector
   std::vector<int> pageRequests(requestCount);
-  
   for (size_t i = 0; i < requestCount; ++i)
   {
     in >> pageRequests[i];
   }
   
+  // Do "FIFO" simulation
   out << "FIFO\n";
-  
   simulate(out, pageCount, frameCount, pageRequests);
   
+  // Do "Optimal" simulation
   out << "\nOptimal\n";
+  simulate(out, pageCount, frameCount, pageRequests);
+  
+  // Do "LRU" simulation
+  simulate(out, pageCount, frameCount, pageRequests);
   
   return 0;
 }
