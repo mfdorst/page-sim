@@ -7,35 +7,51 @@ void printUnloaded(std::ostream& out, int page, int frame);
 void printLoaded(std::ostream& out, int page, int frame);
 void printAlreadyLoaded(std::ostream& out, int page, int frame);
 void printPageFaults(std::ostream& out, int pageFaults);
+void simulate(std::ostream& out, size_t pageCount, size_t frameCount, std::vector<int> const& pageRequests);
+
+struct Page
+{
+  int pageNumber;
+  int nextRequest;
+};
 
 int main()
 {
   std::ifstream in("input.txt");
   std::ofstream out("output.txt");
   
-  int pageCount, frameCount, requestCount;
+  size_t pageCount, frameCount, requestCount;
   in >> pageCount >> frameCount >> requestCount;
   
   std::vector<int> pageRequests(requestCount);
   
-  for (int i = 0; i < requestCount; ++i)
+  for (size_t i = 0; i < requestCount; ++i)
   {
     in >> pageRequests[i];
   }
   
-  std::vector<int> frames(frameCount, -1);
-  std::map<int, int> pageMapping;
+  out << "FIFO\n";
   
-  for (int i = 0; i < pageCount; ++i)
+  simulate(out, pageCount, frameCount, pageRequests);
+  
+  out << "\nOptimal\n";
+  
+  return 0;
+}
+
+void simulate(std::ostream& out, size_t pageCount, size_t frameCount, std::vector<int> const& pageRequests)
+{
+  std::map<int, int> pageMapping;
+  std::vector<int> frames(frameCount, -1);
+  
+  for (size_t i = 0; i < pageCount; ++i)
   {
     pageMapping[i] = -1;
   }
   
-  out << "FIFO\n";
+  size_t nextFrame = 0, pageFaults = 0;
   
-  int nextFrame = 0, pageFaults = 0;
-  
-  for (int i = 0; i < requestCount; ++i)
+  for (size_t i = 0; i < pageRequests.size(); ++i)
   {
     int const page = pageRequests[i];
     int const mappedFrame = pageMapping[page];
@@ -52,7 +68,7 @@ int main()
       frames[nextFrame] = page;
       pageMapping[page] = nextFrame;
       printLoaded(out, page, nextFrame);
-      nextFrame = (nextFrame + 1) % frameCount;
+      nextFrame = (nextFrame + 1) % frames.size();
       pageFaults += 1;
     }
     else
@@ -62,10 +78,6 @@ int main()
     }
   }
   printPageFaults(out, pageFaults);
-  
-  out << "\nOptimal\n";
-  
-  return 0;
 }
 
 void printUnloaded(std::ostream& out, int page, int frame)
