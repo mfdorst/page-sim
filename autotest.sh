@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TESTDIR=insert/path/to/the/directory/with/your/tests/here
+TESTDIR=test_cases
 
 if [ ! -d $TESTDIR ]
 then
