@@ -44,12 +44,18 @@ int main()
   return 0;
 }
 
+struct Page {
+  int pageNumber;
+  int nextRequest;
+  Page(int pageNumber, int nextUse) : pageNumber(pageNumber), nextRequest(nextUse) {}
+};
+
 template <class Strategy>
 void simulate(std::ostream& out, size_t pageCount, size_t frameCount, std::vector<int> const& pageRequests)
 {
   Strategy strategy;
   std::map<int, int> pageMapping;
-  std::vector<int> frames(frameCount, -1);
+  std::vector<Page> frames(frameCount, Page(-1, pageRequests.size()));
   
   for (size_t i = 0; i < pageCount; ++i)
   {
@@ -67,13 +73,23 @@ void simulate(std::ostream& out, size_t pageCount, size_t frameCount, std::vecto
     if (mappedFrame == -1)
     {
       // The requested page is not yet loaded into a frame
-      if (frames[nextFrame] != -1)
+      if (frames[nextFrame].pageNumber != -1)
       {
         // The next frame already has a page loaded
-        pageMapping[frames[nextFrame]] = -1;
-        printUnloaded(out, frames[nextFrame], nextFrame);
+        pageMapping[frames[nextFrame].pageNumber] = -1;
+        printUnloaded(out, frames[nextFrame].pageNumber, nextFrame);
       }
-      frames[nextFrame] = page;
+      // Find the next request for the page currently being requested
+      int nextRequest = pageRequests.size();
+      for (size_t j = i + 1; j < pageRequests.size(); ++j)
+      {
+        if (pageRequests[j] == page)
+        {
+          nextRequest = j;
+          break;
+        }
+      }
+      frames[nextFrame] = Page(page, nextRequest);
       pageMapping[page] = nextFrame;
       printLoaded(out, page, nextFrame);
       pageFaults += 1;
@@ -93,7 +109,7 @@ class FIFOStrategy
 public:
   FIFOStrategy() : m_nextFrame(0) {}
   
-  size_t requestFrameForPage(size_t const page, std::vector<int> const& frames, std::map<int, int> const & pageMapping)
+  size_t requestFrameForPage(size_t const page, std::vector<Page> const& frames, std::map<int, int> const & pageMapping)
   {
     size_t frame = m_nextFrame;
     if (pageMapping.at(page) == -1)
@@ -106,15 +122,27 @@ public:
 
 class OptimalStrategy {
 public:
-  size_t requestFrameForPage(size_t const page, std::vector<int> const& frames, std::map<int, int> const & pageMapping)
+  size_t requestFrameForPage(size_t const page, std::vector<Page> const& frames, std::map<int, int> const & pageMapping)
   {
-    return 0;
+    // Select the frame with the page that will not be requested for the longest time.
+    size_t selectedFrame = 0;
+    for (size_t i = 0; i < frames.size(); ++i)
+    {
+      // If there is an empty frame, select it
+      if (frames[i].pageNumber == -1) return i;
+      
+      if (frames[i].nextRequest > frames[selectedFrame].nextRequest)
+      {
+        selectedFrame = i;
+      }
+    }
+    return selectedFrame;
   }
 };
 
 class LRUStrategy {
 public:
-  size_t requestFrameForPage(size_t const page, std::vector<int> const& frames, std::map<int, int> const & pageMapping)
+  size_t requestFrameForPage(size_t const page, std::vector<Page> const& frames, std::map<int, int> const & pageMapping)
   {
     return 0;
   }
@@ -122,17 +150,17 @@ public:
 
 void printUnloaded(std::ostream& out, int page, int frame)
 {
-  out << "Page " << page << " unloaded from Frame " << frame << ", ";
+  out << "Page " << page << " unloaded from Frame " << frame << ", " << std::flush;
 }
 
 void printLoaded(std::ostream& out, int page, int frame)
 {
-  out << "Page " << page << " loaded into frame " << frame << "\n";
+  out << "Page " << page << " loaded into Frame " << frame << "\n" << std::flush;
 }
 
 void printAlreadyLoaded(std::ostream& out, int page, int frame)
 {
-  out << "Page " << page << " already in frame " << frame << "\n";
+  out << "Page " << page << " already in Frame " << frame << "\n" << std::flush;
 }
 
 void printPageFaults(std::ostream& out, int pageFaults)
