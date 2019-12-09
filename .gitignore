@@ -1,0 +1,5 @@
+cmake-build-debug/
+.idea/
+input.txt
+output.txt
+program_under_test
