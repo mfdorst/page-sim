@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TESTDIR=test_cases
+TESTDIR=insert/path/to/the/directory/with/your/tests/here
 
 if [ ! -d $TESTDIR ]
 then
@@ -9,7 +9,7 @@ then
 	echo ""
 fi
 
-if [ "$BASH_SOURCE" = $0 ]
+if [ $BASH_SOURCE = $0 ]
 then
 	echo "YOU ARE TRYING TO EXECUTE THIS SCRIPT.  You should source it instead."
 	echo "Try running 'source $BASH_SOURCE' or '. $BASH_SOURCE' (make sure to include the space between the period and $BASH_SOURCE)"
@@ -110,7 +110,7 @@ run1test ()
 		then
 			rm input.txt
 		fi
-		ln -s $2 input.txt
+		ln -s -T $2 input.txt
 		$runcom
 		diff -i output.txt $of
 		if [ $? = 0 ]
